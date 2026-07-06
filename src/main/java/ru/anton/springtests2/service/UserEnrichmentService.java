@@ -31,7 +31,7 @@ public class UserEnrichmentService {
         return userEnrichmentMapper.toResponseDto(saved);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserEnrichmentResponseDto getByUserId(UUID userId) {
 
         UserEnrichment entity = userEnrichmentRepository.findByUserId(userId)
