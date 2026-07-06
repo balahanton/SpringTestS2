@@ -27,4 +27,10 @@ public class UserEnrichmentController {
     public UserEnrichmentResponseDto getEnrichment(@PathVariable("id") UUID userId) {
         return userEnrichmentService.getByUserId(userId);
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteEnrichment(@PathVariable("id") UUID userId) {
+        userEnrichmentService.deleteByUserId(userId);
+    }
 }

@@ -43,4 +43,16 @@ public class UserEnrichmentService {
 
         return userEnrichmentMapper.toResponseDto(entity);
     }
+
+    @Transactional
+    public void deleteByUserId(UUID userId) {
+        UserEnrichment entity = userEnrichmentRepository.findByUserId(userId)
+                .filter(enrichment -> !enrichment.getIsDeleted())
+                .orElseThrow(() -> {
+                    log.error("Обогащающие данные для userId {} не найдены при удалении", userId);
+                    return new EntityNotFoundException("Enrichment data for userId " + userId + " not found");
+                });
+
+        userEnrichmentRepository.delete(entity);
+    }
 }
