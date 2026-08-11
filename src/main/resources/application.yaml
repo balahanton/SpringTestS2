@@ -33,3 +33,11 @@ kafka:
   consumer:
     user-created-topic: user.created
     group-id: spring-test-s2-enrichment
+  topics:
+    partitions: 1
+    replication-factor: 1
+    retry-delays-ms:
+      - 1000
+      - 2000
+      - 4000
+    dlt-suffix: .DLQ

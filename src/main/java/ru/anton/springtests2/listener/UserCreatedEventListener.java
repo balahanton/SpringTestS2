@@ -10,8 +10,6 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 import ru.anton.springtests2.dto.UserEnrichmentCreateDto;
-import ru.anton.springtests2.model.DeadLetterEvent;
-import ru.anton.springtests2.model.ProcessedEvent;
 import ru.anton.springtests2.repository.DeadLetterEventRepository;
 import ru.anton.springtests2.repository.ProcessedEventRepository;
 import ru.anton.springtests2.repository.UserEnrichmentRepository;
@@ -49,8 +47,10 @@ public class UserCreatedEventListener {
     }
 
     private void processEvent(UUID eventId, UserEnrichmentCreateDto dto) {
-        if (processedEventRepository.existsByEventId(eventId)) {
-            log.debug("Событие {} уже обработано ранее, пропускаем (дубль доставки)", eventId);
+        int insertedProcessedEvent = processedEventRepository.insertIfAbsent(eventId);
+
+        if (insertedProcessedEvent == 0) {
+            log.debug("Событие {} уже обработано ранее (или обрабатывается параллельно), пропускаем", eventId);
             return;
         }
 
@@ -63,8 +63,6 @@ public class UserCreatedEventListener {
         } else {
             log.debug("UserEnrichment для userId {} создан по Kafka-событию {}", dto.getUserId(), eventId);
         }
-
-        processedEventRepository.save(new ProcessedEvent(eventId));
     }
 
     @DltHandler
@@ -78,14 +76,10 @@ public class UserCreatedEventListener {
                 eventId = UUID.fromString(eventIdHeader);
             }
         } catch (IllegalArgumentException parseEx) {
-            log.warn("Не удалось получить eventId из заголовка DLT-сообщения: {}", eventIdHeader);
+            log.warn("Не удалось распарсить eventId из заголовка DLT-сообщения: {}", eventIdHeader);
         }
 
-        DeadLetterEvent deadLetterEvent = new DeadLetterEvent();
-        deadLetterEvent.setEventId(eventId);
-        deadLetterEvent.setPayload(payload);
-        deadLetterEvent.setErrorMessage(ex.getMessage());
-        deadLetterEventRepository.save(deadLetterEvent);
+        deadLetterEventRepository.upsertByEventId(UUID.randomUUID(), eventId, payload, ex.getMessage());
 
         log.error("Событие {} сохранено в dead_letter_events после исчерпания попыток. Payload: {}, причина: {}",
                 eventId, payload, ex.getMessage());
