@@ -11,15 +11,16 @@ import java.util.UUID;
 public interface DeadLetterEventRepository extends JpaRepository<DeadLetterEvent, UUID> {
     @Modifying
     @Query(value = """
-            INSERT INTO spring_test_s2.dead_letter_events (id, event_id, payload, error_message, received_at)
-            VALUES (:id, :eventId, :payload, :errorMessage, now())
-            ON CONFLICT (event_id) DO UPDATE SET
+            INSERT INTO spring_test_s2.dead_letter_events (id, event_id, message_key, payload, error_message, received_at)
+            VALUES (:id, :eventId, :messageKey, :payload, :errorMessage, now())
+            ON CONFLICT (message_key) DO UPDATE SET
                 payload = EXCLUDED.payload,
                 error_message = EXCLUDED.error_message,
                 received_at = now()
             """, nativeQuery = true)
-    void upsertByEventId(@Param("id") UUID id,
-                         @Param("eventId") UUID eventId,
-                         @Param("payload") String payload,
-                         @Param("errorMessage") String errorMessage);
+    void upsertByMessageKey(@Param("id") UUID id,
+                            @Param("eventId") UUID eventId,
+                            @Param("messageKey") String messageKey,
+                            @Param("payload") String payload,
+                            @Param("errorMessage") String errorMessage);
 }

@@ -20,6 +20,9 @@ public class DeadLetterEvent {
     @Column(name = "event_id")
     private UUID eventId;
 
+    @Column(name = "message_key")
+    private String messageKey;
+
     @Column(nullable = false, columnDefinition = "text")
     private String payload;
 

@@ -7,7 +7,8 @@ CREATE TABLE spring_test_s2.processed_events
 CREATE TABLE spring_test_s2.dead_letter_events
 (
     id            UUID PRIMARY KEY,
-    event_id      UUID UNIQUE,
+    event_id      UUID,
+    message_key   TEXT        NOT NULL UNIQUE,
     payload       TEXT        NOT NULL,
     error_message TEXT,
     received_at   TIMESTAMPTZ NOT NULL DEFAULT now()

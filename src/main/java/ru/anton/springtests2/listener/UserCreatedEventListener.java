@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
+import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -68,6 +69,9 @@ public class UserCreatedEventListener {
     @DltHandler
     public void onDlt(String payload,
                       @Header(value = "eventId", required = false) String eventIdHeader,
+                      @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+                      @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+                      @Header(KafkaHeaders.OFFSET) long offset,
                       Exception ex) {
 
         UUID eventId = null;
@@ -79,9 +83,19 @@ public class UserCreatedEventListener {
             log.warn("Не удалось распарсить eventId из заголовка DLT-сообщения: {}", eventIdHeader);
         }
 
-        deadLetterEventRepository.upsertByEventId(UUID.randomUUID(), eventId, payload, ex.getMessage());
+        String messageKey = eventId != null
+                ? eventId.toString()
+                : topic + ":" + partition + ":" + offset;
 
-        log.error("Событие {} сохранено в dead_letter_events после исчерпания попыток. Payload: {}, причина: {}",
-                eventId, payload, ex.getMessage());
+        try {
+            deadLetterEventRepository.upsertByMessageKey(UUID.randomUUID(), eventId, messageKey, payload, ex.getMessage());
+            log.error("Событие {} (ключ {}) сохранено в dead_letter_events. Payload: {}, причина: {}",
+                    eventId, messageKey, payload, ex.getMessage());
+        } catch (Exception persistEx) {
+            log.error("Не удалось сохранить DLT-событие (ключ {}) в БД, offset НЕ будет подтверждён. " +
+                            "Payload: {}, исходная причина: {}, ошибка сохранения: {}",
+                    messageKey, payload, ex.getMessage(), persistEx.getMessage(), persistEx);
+            throw persistEx;
+        }
     }
 }
