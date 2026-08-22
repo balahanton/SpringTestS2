@@ -31,8 +31,8 @@ spring:
 
 kafka:
   consumer:
-    user-created-topic: user.created
-    group-id: spring-test-s2-enrichment
+    delivery-created-topic: delivery.created
+    group-id: spring-test-s2-delivery-enrichment
   topics:
     partitions: 1
     replication-factor: 1

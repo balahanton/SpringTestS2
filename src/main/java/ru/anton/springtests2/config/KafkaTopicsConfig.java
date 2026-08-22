@@ -12,8 +12,8 @@ import java.util.List;
 @Configuration
 public class KafkaTopicsConfig {
 
-    @Value("${kafka.consumer.user-created-topic}")
-    private String userCreatedTopic;
+    @Value("${kafka.consumer.delivery-created-topic}")
+    private String deliveryCreatedTopic;
 
     @Value("${kafka.topics.partitions:1}")
     private int partitions;
@@ -28,14 +28,14 @@ public class KafkaTopicsConfig {
     private String dltSuffix;
 
     @Bean
-    public NewTopic userCreatedTopic() {
-        return TopicBuilder.name(userCreatedTopic).partitions(partitions).replicas(replicationFactor).build();
+    public NewTopic deliveryCreatedTopic() {
+        return TopicBuilder.name(deliveryCreatedTopic).partitions(partitions).replicas(replicationFactor).build();
     }
 
     @Bean
-    public KafkaAdmin.NewTopics userCreatedRetryTopics() {
+    public KafkaAdmin.NewTopics deliveryCreatedRetryTopics() {
         NewTopic[] topics = retryDelaysMs.stream()
-                .map(delay -> TopicBuilder.name(userCreatedTopic + "-retry-" + delay)
+                .map(delay -> TopicBuilder.name(deliveryCreatedTopic + "-retry-" + delay)
                         .partitions(partitions)
                         .replicas(replicationFactor)
                         .build())
@@ -44,7 +44,7 @@ public class KafkaTopicsConfig {
     }
 
     @Bean
-    public NewTopic userCreatedDltTopic() {
-        return TopicBuilder.name(userCreatedTopic + dltSuffix).partitions(partitions).replicas(replicationFactor).build();
+    public NewTopic deliveryCreatedDltTopic() {
+        return TopicBuilder.name(deliveryCreatedTopic + dltSuffix).partitions(partitions).replicas(replicationFactor).build();
     }
 }
