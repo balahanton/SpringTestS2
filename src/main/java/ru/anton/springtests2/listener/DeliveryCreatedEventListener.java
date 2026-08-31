@@ -30,8 +30,12 @@ public class DeliveryCreatedEventListener {
     private final TransactionTemplate transactionTemplate;
 
     @RetryableTopic(
-            attempts = "4",
-            backOff = @BackOff(delay = 1000, multiplier = 2.0, maxDelay = 30000),
+            attempts = "${kafka.topics.retry.attempts}",
+            backOff = @BackOff(
+                    delayString = "${kafka.topics.retry.backoff-delay-ms}",
+                    multiplierString = "${kafka.topics.retry.backoff-multiplier}",
+                    maxDelayString = "${kafka.topics.retry.backoff-max-delay-ms}"
+            ),
             dltTopicSuffix = ".DLQ",
             autoCreateTopics = "false",
             exclude = NonRetryableException.class

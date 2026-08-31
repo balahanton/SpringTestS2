@@ -36,8 +36,9 @@ kafka:
   topics:
     partitions: 1
     replication-factor: 1
-    retry-delays-ms:
-      - 1000
-      - 2000
-      - 4000
     dlt-suffix: .DLQ
+    retry:
+      attempts: 4
+      backoff-delay-ms: 1000
+      backoff-multiplier: 2.0
+      backoff-max-delay-ms: 30000

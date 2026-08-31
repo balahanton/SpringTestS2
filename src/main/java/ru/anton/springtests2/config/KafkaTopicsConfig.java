@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaAdmin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
@@ -21,8 +22,17 @@ public class KafkaTopicsConfig {
     @Value("${kafka.topics.replication-factor:1}")
     private short replicationFactor;
 
-    @Value("${kafka.topics.retry-delays-ms}")
-    private List<Integer> retryDelaysMs;
+    @Value("${kafka.topics.retry.attempts}")
+    private int retryAttempts;
+
+    @Value("${kafka.topics.retry.backoff-delay-ms}")
+    private long retryBackoffDelayMs;
+
+    @Value("${kafka.topics.retry.backoff-multiplier}")
+    private double retryBackoffMultiplier;
+
+    @Value("${kafka.topics.retry.backoff-max-delay-ms}")
+    private long retryBackoffMaxDelayMs;
 
     @Value("${kafka.topics.dlt-suffix:.DLQ}")
     private String dltSuffix;
@@ -34,7 +44,7 @@ public class KafkaTopicsConfig {
 
     @Bean
     public KafkaAdmin.NewTopics deliveryCreatedRetryTopics() {
-        NewTopic[] topics = retryDelaysMs.stream()
+        NewTopic[] topics = retryDelaysMs().stream()
                 .map(delay -> TopicBuilder.name(deliveryCreatedTopic + "-retry-" + delay)
                         .partitions(partitions)
                         .replicas(replicationFactor)
@@ -46,5 +56,15 @@ public class KafkaTopicsConfig {
     @Bean
     public NewTopic deliveryCreatedDltTopic() {
         return TopicBuilder.name(deliveryCreatedTopic + dltSuffix).partitions(partitions).replicas(replicationFactor).build();
+    }
+
+    private List<Long> retryDelaysMs() {
+        List<Long> delays = new ArrayList<>();
+        long delay = retryBackoffDelayMs;
+        for (int attempt = 1; attempt < retryAttempts; attempt++) {
+            delays.add(Math.min(delay, retryBackoffMaxDelayMs));
+            delay = (long) (delay * retryBackoffMultiplier);
+        }
+        return delays;
     }
 }
